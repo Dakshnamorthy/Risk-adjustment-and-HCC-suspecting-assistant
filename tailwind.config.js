@@ -7,24 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+        brand: {
+          navy: '#0B1F3A',
+          blue: '#2563EB',
+          purple: '#7C3AED', // AI Purple
         },
-        cts: {
-          navy: '#0a1628',
-          blue: '#1e40af',
-          teal: '#0d9488',
-          orange: '#f97316',
-          purple: '#8b5cf6',
+        status: {
+          success: '#0F9F7F',
+          warning: '#D99A00',
+          danger: '#D64545',
+        },
+        surface: {
+          DEFAULT: '#FFFFFF',
+          background: '#F6F8FB',
+          border: '#E5EAF0',
+        },
+        content: {
+          main: '#172033',
+          muted: '#64748B',
         }
       },
       animation: {
