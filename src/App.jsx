@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
-import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
-import ReviewQueue from './pages/ReviewQueue';
 import Members from './pages/Members';
 import Member360 from './pages/Member360';
-import EvidenceTimeline from './pages/EvidenceTimeline';
-import AIAnalysis from './pages/AIAnalysis';
-import HumanReview from './pages/HumanReview';
-import DecisionConfirmation from './pages/DecisionConfirmation';
-import ReviewHistory from './pages/ReviewHistory';
 import Analytics from './pages/Analytics';
 import HccMapping from './pages/HccMapping';
+import MLPrediction from './pages/MLPrediction';
+import UnflaggedMembers from './pages/UnflaggedMembers';
+import FlaggedMembers from './pages/FlaggedMembers';
+import AgentAnalysis from './pages/AgentAnalysis';
+import Estimation from './pages/Estimation';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,26 +48,10 @@ function App() {
           } 
         />
         <Route 
-          path="/signup" 
-          element={
-            isAuthenticated ? 
-            <Navigate to="/dashboard" replace /> : 
-            <SignUp onSignUp={handleSignIn} />
-          } 
-        />
-        <Route 
           path="/dashboard" 
           element={
             isAuthenticated ? 
             <Dashboard user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
-          path="/review-queue" 
-          element={
-            isAuthenticated ? 
-            <ReviewQueue user={user} onSignOut={handleSignOut} /> : 
             <Navigate to="/login" replace />
           } 
         />
@@ -90,46 +72,6 @@ function App() {
           } 
         />
         <Route 
-          path="/evidence-timeline" 
-          element={
-            isAuthenticated ? 
-            <EvidenceTimeline user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
-          path="/ai-analysis" 
-          element={
-            isAuthenticated ? 
-            <AIAnalysis user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
-          path="/human-review" 
-          element={
-            isAuthenticated ? 
-            <HumanReview user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
-          path="/decision-confirmation" 
-          element={
-            isAuthenticated ? 
-            <DecisionConfirmation user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
-          path="/review-history" 
-          element={
-            isAuthenticated ? 
-            <ReviewHistory user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
-          } 
-        />
-        <Route 
           path="/analytics" 
           element={
             isAuthenticated ? 
@@ -142,6 +84,46 @@ function App() {
           element={
             isAuthenticated ? 
             <HccMapping user={user} onSignOut={handleSignOut} /> : 
+            <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/ml-prediction" 
+          element={
+            isAuthenticated ? 
+            <MLPrediction user={user} onSignOut={handleSignOut} /> : 
+            <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/unflagged-members" 
+          element={
+            isAuthenticated ? 
+            <UnflaggedMembers user={user} onSignOut={handleSignOut} /> : 
+            <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/flagged-members" 
+          element={
+            isAuthenticated ? 
+            <FlaggedMembers user={user} onSignOut={handleSignOut} /> : 
+            <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/agent-analysis" 
+          element={
+            isAuthenticated ? 
+            <AgentAnalysis user={user} onSignOut={handleSignOut} /> : 
+            <Navigate to="/login" replace />
+          } 
+        />
+        <Route 
+          path="/estimation" 
+          element={
+            isAuthenticated ? 
+            <Estimation user={user} onSignOut={handleSignOut} /> : 
             <Navigate to="/login" replace />
           } 
         />
