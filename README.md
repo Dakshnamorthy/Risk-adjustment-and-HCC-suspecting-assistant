@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CTS HCC Management Dashboard
 
 A professional, interactive healthcare risk adjustment platform built for CTS (Clinical Transaction Solutions). This comprehensive dashboard helps healthcare organizations optimize HCC (Hierarchical Condition Category) identification, documentation, and revenue capture.
@@ -294,3 +295,6 @@ For support or questions:
 ---
 
 **Built with ❤️ for healthcare professionals**
+=======
+# Medicare Member Risk Stratification and Care Management
+>>>>>>> 21e6aca55f8fa6f2e869ed08b17d437941b5fce1
