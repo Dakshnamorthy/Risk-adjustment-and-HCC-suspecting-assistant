@@ -1,0 +1,62 @@
+[
+  {
+    "patient_id": "PT003935",
+    "report": {
+      "summary": "Patient PT003935 has a LOW overall risk of disease, with a risk score of 0.31. No HCC is present.",
+      "risk_assessment": [
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "LOW",
+          "risk_score": 0.19
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "LOW",
+          "risk_score": 0.15
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "LOW",
+          "risk_score": 0.25
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "LOW",
+          "risk_score": 0.36
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "LOW",
+          "risk_score": 0.21
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "HIGH",
+          "risk_score": 0.83
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "risk_level": "LOW",
+          "risk_score": 0.32
+        }
+      ],
+      "explanations": [
+        {
+          "disease": "Overall Patient Risk",
+          "text": "The patient's overall risk is LOW due to the majority of risk scores being below 0.3. However, one risk score of 0.83 indicates a HIGH risk, which is not consistent with the overall LOW risk assessment."
+        },
+        {
+          "disease": "Overall Patient Risk",
+          "text": "The patient's risk assessment is based on a hybrid model that combines machine learning, frequency, encounters, recency, and patterns. This model provides a comprehensive view of the patient's risk profile."
+        }
+      ],
+      "recommendation": "Monitoring and follow-up are recommended to ensure the patient's risk remains LOW and to address the HIGH risk indicated by one of the risk scores.",
+      "citations": [
+        {
+          "disease": "Overall Patient Risk",
+          "details": "Hybrid model for risk assessment (ML + frequency + encounters + recency + patterns)"
+        }
+      ]
+    }
+  }
+]

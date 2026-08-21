@@ -3,3 +3,6 @@ langchain-openai
 langgraph
 pandas
 python-dotenv
+scikit-learn==1.5.1
+numpy
+joblib

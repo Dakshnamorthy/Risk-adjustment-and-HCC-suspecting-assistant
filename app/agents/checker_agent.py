@@ -1,121 +1,76 @@
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
-from app.config.settings import NVIDIA_API_KEY, NVIDIA_BASE_URL, NVIDIA_MODEL
-
-
 class CheckerAgent:
-    def __init__(self):
-        self.llm = ChatOpenAI(
-            api_key=NVIDIA_API_KEY,
-            base_url=NVIDIA_BASE_URL,
-            model=NVIDIA_MODEL,
-            temperature=0
-        )
 
-    def _aggregate_features(self, records):
-        features = {
-            "repeated_12m": False,
-            "seen_5_times": False,
-            "max_frequency": 0,
-            "total_encounters": 0,
-            "seen_once": False
-        }
+    # -------------------------------
+    # GET LATEST RECORD
+    # -------------------------------
+    def _get_latest_record(self, patient):
+        records = patient.records  # assuming list
 
-        for r in records:
-            if r.diagnosis_patterns.seen_repeated_12m:
-                features["repeated_12m"] = True
+        if not records:
+            return None
 
-            if r.diagnosis_patterns.seen_5_times:
-                features["seen_5_times"] = True
+        # Sort by year (latest first)
+        records = sorted(records, key=lambda r: r.year, reverse=True)
+        return records[0]
 
-            if r.diagnosis_frequency:
-                features["max_frequency"] = max(
-                    features["max_frequency"],
-                    r.diagnosis_frequency
-                )
+    # -------------------------------
+    # CHECK STRONG DOCUMENT
+    # -------------------------------
+    def _has_strong_docs(self, record):
+        encounters = getattr(record.encounters, "total", 0)
+        frequency = getattr(record, "diagnosis_frequency", 0)
 
-            if r.encounters.total:
-                features["total_encounters"] += r.encounters.total
+        # Strong evidence condition
+        return encounters >= 1 or frequency >= 2
 
-            if r.diagnosis_patterns.seen_once:
-                features["seen_once"] = True
-
-        return features
-
-    def _score_hcc(self, features):
-        score = 0
-
-        if features["repeated_12m"]:
-            score += 4
-
-        if features["seen_5_times"]:
-            score += 3
-
-        if features["max_frequency"] > 2:
-            score += 3
-
-        if features["seen_once"]:
-            score += 1
-
-        if features["total_encounters"] > 5:
-            score += 1
-
-        return score
-
-    def _llm_validate(self, hcc, score, features):
-        prompt = f"""
-You are a clinical audit validator.
-
-HCC: {hcc}
-Score: {score}
-
-Features:
-{features}
-
-Rules:
-- Repeated OR frequency >= 3 → VALID
-- Encounters >= 4 → VALID
-- Only one occurrence with low frequency → UNSUPPORTED_HCC
-
-Respond ONLY:
-VALID or UNSUPPORTED_HCC
-"""
-
-        response = self.llm.invoke([HumanMessage(content=prompt)])
-        return response.content.strip()
-
+    # -------------------------------
+    # MAIN RUN
+    # -------------------------------
     def run(self, patient):
-        all_hccs = patient.get_all_hcc_codes()
 
-        if not all_hccs:
-            return "NO_HCC_PRESENT"
+        latest = self._get_latest_record(patient)
 
-        final_decisions = []
+        if not latest:
+            print("[CHECKER] No records → Flow B")
+            return {
+                "route": "NO_HCC_PRESENT",
+                "hcc_summary": []
+            }
 
-        for hcc in all_hccs:
-            records = patient.get_records_by_hcc(hcc)
+        # Extract HCC from ONLY latest record
+        hcc_codes = latest.hcc_codes if hasattr(latest, "hcc_codes") else []
 
-            features = self._aggregate_features(records)
-            score = self._score_hcc(features)
+        print("\n=== CHECKER DEBUG ===")
+        print("[LATEST YEAR]", latest.year)
+        print("[HCCs]", hcc_codes)
 
-            print("=== CHECKER DEBUG ===")
-            print("[HCC]", hcc)
-            print("[Features]", features)
-            print("[Score]", score)
+        # -------------------------------
+        # CASE 1: NO HCC
+        # -------------------------------
+        if not hcc_codes:
+            print("[FINAL] → NO_HCC_PRESENT (Flow B)")
+            return {
+                "route": "NO_HCC_PRESENT",
+                "hcc_summary": []
+            }
 
-            if (
-                features["repeated_12m"] or
-                features["seen_5_times"] or
-                features["max_frequency"] >= 3 or
-                features["total_encounters"] >= 4
-            ):
-                base = "VALID"
-            else:
-                base = "UNSUPPORTED_HCC"
+        # -------------------------------
+        # CASE 2: HCC EXISTS → CHECK DOCS
+        # -------------------------------
+        strong = self._has_strong_docs(latest)
 
-            final_decisions.append(base)
+        print("[Strong Docs]", strong)
 
-        if "VALID" in final_decisions:
-            return "VALID"
+        if strong:
+            print("[FINAL] → VALID (ML FLOW)")
+            return {
+                "route": "VALID",
+                "hcc_summary": hcc_codes
+            }
+
         else:
-            return "UNSUPPORTED_HCC"
+            print("[FINAL] → UNSUPPORTED_HCC (Flow A)")
+            return {
+                "route": "UNSUPPORTED_HCC",
+                "hcc_summary": hcc_codes
+            }

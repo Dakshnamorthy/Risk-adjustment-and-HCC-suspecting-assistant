@@ -27,7 +27,11 @@ def generate_pdf(report, filename="report.pdf"):
     elements.append(Paragraph("2. Risk Assessment", styles["Heading2"]))
 
     for r in report["risk_assessment"]:
-        text = f"{r['disease']} → {r['risk_level']} ({r['risk_score']})"
+        disease = r.get("disease", "Unknown")
+        risk_level = r.get("risk_level", "N/A")
+        risk_score = r.get("risk_score", "N/A")
+
+        text = f"{disease} → {risk_level} ({risk_score})"
         elements.append(Paragraph(text, styles["BodyText"]))
 
     elements.append(Spacer(1, 12))

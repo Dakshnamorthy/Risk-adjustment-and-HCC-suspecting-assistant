@@ -7,7 +7,11 @@ from app.services.citation_service import CitationService
 from app.services.risk_service import RiskService
 from app.services.risk_engine import RiskEngine
 from app.agents.explanation_agent import ExplanationAgent
+from app.services.ml_risk_model import MLRiskModel
+from app.services.ml_feature_builder import build_ml_features
 
+
+ml_model = MLRiskModel("/Users/vishal/Desktop/agentic_system/app/ML_model/risk_model.pkl")
 
 # -------------------------------
 # LOAD PATIENT
@@ -29,14 +33,14 @@ def load_patient_node(state):
 # CHECKER
 # -------------------------------
 def checker_node(state):
-    print("\n--- CHECKER NODE ---")
-
     agent = CheckerAgent()
-    route = agent.run(state["patient"])
 
-    print("Route decided:", route)
+    result = agent.run(state["patient"])
 
-    return {**state, "route": route}
+    state["route"] = result["route"]
+    state["hcc_summary"] = result["hcc_summary"]
+
+    return state
 
 
 # -------------------------------
@@ -87,13 +91,47 @@ def citation_node(state):
 def risk_service_node(state):
     print("\n--- RISK NODE (FLOW A) ---")
 
-    service = RiskService()
-    output = service.run(state["citation_output"])
+    route = state.get("route")   # from checker
+    patient = state["patient"]
+    print("[TRACE] ROUTE:", route)
 
-    print("Risk Output (Flow A):", output)
+    # ===============================
+    # ✅ CASE 1: VALID → USE ML MODEL
+    # ===============================
+    if route == "VALID":
+        print("Using ML Model for VALID case")
 
-    return {**state, "risk_output": output}
+        features = build_ml_features(patient)
+        print("[DEBUG] ML Features:", features)
 
+        score, level = ml_model.predict(features)
+
+        output = {
+            "patient_id": patient.patient_id,
+            "analysis": [{
+                "status": "VALID",
+                "risk_score": score,
+                "risk_level": level,
+                "reasoning": "Risk computed using ML model based on patient history and encounter patterns",
+                "citations": []
+            }]
+        }
+
+        print("Risk Output (ML):", output)
+        return {**state, "risk_output": output}
+
+    # ===============================
+    # ❌ CASE 2: UNSUPPORTED → OLD FLOW
+    # ===============================
+    else:
+        print("Using Rule-based RiskService (UNSUPPORTED)")
+
+        service = RiskService()
+        output = service.run(state["citation_output"])
+
+        print("Risk Output (Flow A - Rule):", output)
+
+        return {**state, "risk_output": output}
 
 # -------------------------------
 # FLOW B → RISK ENGINE (NO HCC)
@@ -119,12 +157,13 @@ def explanation_node(state):
 
     agent = ExplanationAgent()
 
-    # 🔥 Always prefer pipeline output
-    if "risk_output" in state:
-        input_data = state["risk_output"]
-
-    else:
-        raise ValueError("No input found for explanation node")
+    # ✅ PASS FULL CONTEXT
+    input_data = {
+        "patient": state.get("patient"),
+        "risk_output": state.get("risk_output"),
+        "route": state.get("route"),              # 🔥 VERY IMPORTANT
+        "hcc_summary": state.get("hcc_summary", [])  # 🔥 for Flow A
+    }
 
     output = agent.run(input_data)
 
