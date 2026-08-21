@@ -49,6 +49,7 @@ const Sidebar = ({ onSignOut, isOpen, setIsOpen }) => {
               key={item.path}
               to={item.path}
               title={item.label}
+              onClick={() => setIsOpen && setIsOpen(false)}
               className={`flex items-center gap-4 px-3 py-3 rounded-lg transition-all duration-200 group
                 ${active 
                   ? 'bg-brand-blue text-white shadow-sm' 

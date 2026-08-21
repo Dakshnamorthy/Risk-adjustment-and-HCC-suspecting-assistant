@@ -86,7 +86,7 @@ const MLPrediction = ({ user, onSignOut }) => {
           )}
         </div>
 
-        <div className="bg-surface rounded-xl p-6 md:p-8 shadow-sm border border-surface-border card-shadow">
+        <div className="bg-surface rounded-xl p-4 sm:p-6 md:p-8 shadow-sm border border-surface-border card-shadow">
           
           {/* Header Action Area */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-surface-border pb-6">

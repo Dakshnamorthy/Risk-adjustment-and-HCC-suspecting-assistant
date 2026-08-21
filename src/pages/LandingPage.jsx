@@ -529,7 +529,7 @@ export default function LandingPage() {
             <p className="lp-tag" style={{ justifyContent: 'center' }}>Pricing</p>
             <h2 className="lp-h2" style={{ textAlign: 'center', marginBottom: 8 }}>Choose your plan.</h2>
             <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: 15, marginBottom: 40 }}>Scale HELIZA to the size of your member population.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+            <div className="lp-pricing-grid">
               {[
                 {
                   name: 'Basic',

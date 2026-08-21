@@ -70,8 +70,8 @@ const FlaggedMembers = ({ user, onSignOut }) => {
         </div>
 
         {/* Main Content Area */}
-        <div className="bg-surface rounded-xl p-6 md:p-8 shadow-sm border border-surface-border card-shadow">
-          
+        <div className="bg-surface rounded-xl p-4 sm:p-6 md:p-8 shadow-sm border border-surface-border card-shadow">
+
           <div className="mb-6 border-b border-surface-border pb-4">
              <h2 className="text-xl font-semibold text-content-main">Action Required: Missing Documentation</h2>
           </div>
@@ -204,17 +204,17 @@ const FlaggedMembers = ({ user, onSignOut }) => {
                </div>
             </div>
             
-            <div className="px-6 py-4 border-t border-surface-border bg-surface-background flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-4 border-t border-surface-border bg-surface-background flex flex-col sm:flex-row justify-between items-center gap-3">
                <button 
                  onClick={handleMarkFollowUp}
-                 className="px-4 py-2 bg-status-warning/10 hover:bg-status-warning/20 text-status-warning rounded-lg font-semibold text-sm transition-colors"
+                 className="w-full sm:w-auto px-4 py-2 bg-status-warning/10 hover:bg-status-warning/20 text-status-warning rounded-lg font-semibold text-sm transition-colors text-center"
                >
                  Mark for Follow-up
                </button>
                
                <button 
                  onClick={() => setActiveReport(null)}
-                 className="px-6 py-2 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-lg font-semibold text-sm shadow-sm transition-colors"
+                 className="w-full sm:w-auto px-6 py-2 bg-brand-blue hover:bg-brand-blue/90 text-white rounded-lg font-semibold text-sm shadow-sm transition-colors text-center"
                >
                  Close
                </button>

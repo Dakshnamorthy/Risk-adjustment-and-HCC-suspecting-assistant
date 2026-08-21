@@ -104,7 +104,7 @@ const HccMapping = ({ user, onSignOut }) => {
           <div className="space-y-6">
             
             {/* Step 1: File Upload & Mapping */}
-            <div className={`bg-surface rounded-xl p-6 md:p-8 shadow-sm border transition-all card-shadow ${step === 1 ? 'border-brand-blue' : 'border-surface-border'}`}>
+            <div className={`bg-surface rounded-xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all card-shadow ${step === 1 ? 'border-brand-blue' : 'border-surface-border'}`}>
               <div className="flex items-center space-x-4 mb-6">
                 <div className="w-10 h-10 rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center font-bold text-lg">1</div>
                 <h2 className="text-xl font-bold text-content-main">Upload & Map Claims Data</h2>
@@ -196,7 +196,7 @@ const HccMapping = ({ user, onSignOut }) => {
 
             {/* Step 2: Stratification (Visible only after Step 1 completes) */}
             {step >= 2 && (
-              <div className={`bg-surface rounded-xl p-6 md:p-8 shadow-sm border transition-all card-shadow ${step === 2 ? 'border-status-warning' : 'border-surface-border'}`}>
+              <div className={`bg-surface rounded-xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all card-shadow ${step === 2 ? 'border-status-warning' : 'border-surface-border'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 rounded-full bg-status-warning/10 text-status-warning flex items-center justify-center font-bold text-lg">2</div>

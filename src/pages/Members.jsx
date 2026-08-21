@@ -449,7 +449,7 @@ export default function Members({ user, onSignOut }) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-surface-background px-6 py-4 border-t border-surface-border flex items-center justify-between">
+            <div className="bg-surface-background px-4 sm:px-6 py-4 border-t border-surface-border flex flex-wrap sm:flex-nowrap items-center justify-between gap-3">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
@@ -458,12 +458,12 @@ export default function Members({ user, onSignOut }) {
                 Previous
               </button>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full">
                 {Array.from({ length: totalPages }).map((_, i) => (
                   <button
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`w-8 h-8 flex items-center justify-center text-sm font-medium rounded-md transition-colors ${
+                    className={`w-8 h-8 flex items-center justify-center text-sm font-medium rounded-md shrink-0 transition-colors ${
                       currentPage === i + 1
                         ? 'bg-brand-blue text-white shadow-sm'
                         : 'bg-surface text-content-main border border-surface-border hover:bg-surface-background'
