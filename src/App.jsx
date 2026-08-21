@@ -130,11 +130,7 @@ function App() {
         />
         <Route
           path="/"
-          element={
-            isAuthenticated ?
-            <Navigate to="/dashboard" replace /> :
-            <LandingPage />
-          }
+          element={<LandingPage />}
         />
       </Routes>
     </Router>

@@ -118,17 +118,19 @@ const Analytics = ({ user, onSignOut }) => {
             </h2>
             <span className="text-status-success font-bold text-sm bg-status-success/10 px-2.5 py-1 rounded-md">+8.3% YoY</span>
           </div>
-          <div className="flex items-end justify-between gap-1 sm:gap-2 h-64">
-            {analyticsData.hccCapture.byMonth.map((value, idx) => (
-              <div key={idx} className="flex flex-col items-center flex-1">
-                <div
-                  className="w-full bg-brand-blue rounded-t-sm hover:bg-brand-blue/80 transition-colors"
-                  style={{ height: `${(value / 500) * 100}%` }}
-                  title={`Month ${idx + 1}: ${value} HCCs`}
-                ></div>
-                <p className="text-xs text-content-muted mt-2 font-medium">M{idx + 1}</p>
-              </div>
-            ))}
+          <div className="overflow-x-auto w-full pb-2">
+            <div className="flex items-end justify-between gap-1 sm:gap-2 h-64 min-w-[500px]">
+              {analyticsData.hccCapture.byMonth.map((value, idx) => (
+                <div key={idx} className="flex flex-col items-center flex-1">
+                  <div
+                    className="w-full bg-brand-blue rounded-t-sm hover:bg-brand-blue/80 transition-colors"
+                    style={{ height: `${(value / 500) * 100}%` }}
+                    title={`Month ${idx + 1}: ${value} HCCs`}
+                  ></div>
+                  <p className="text-xs text-content-muted mt-2 font-medium">M{idx + 1}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -73,14 +73,14 @@ const Dashboard = ({ user, onSignOut }) => {
         
         {/* Left Column - Priority Patient Queue */}
         <div className="lg:col-span-2 flex flex-col space-y-6">
-          <div className="bg-surface rounded-xl p-6 flex-1 shadow-sm border border-surface-border flex flex-col card-shadow overflow-hidden">
+          <div className="bg-surface rounded-xl p-4 sm:p-6 flex-1 shadow-sm border border-surface-border flex flex-col card-shadow overflow-hidden">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-content-main">HCC Suspecting Queue</h2>
               <button className="text-sm font-semibold text-brand-blue hover:text-brand-blue/80 transition-colors">View All</button>
             </div>
             
             <div className="overflow-x-auto flex-1 w-full">
-              <table className="w-full text-sm text-left whitespace-nowrap min-w-[700px]">
+              <table className="w-full text-sm text-left whitespace-nowrap min-w-[650px]">
                 <thead>
                   <tr className="text-[13px] font-semibold text-content-muted uppercase tracking-wider border-b border-surface-border">
                     <th className="pb-3 px-2">Member</th>
@@ -96,7 +96,7 @@ const Dashboard = ({ user, onSignOut }) => {
                     <tr key={idx} className="hover:bg-surface-background transition-colors">
                       <td className="py-4 px-2">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-surface-background flex items-center justify-center text-content-muted overflow-hidden border border-surface-border shadow-sm">
+                          <div className="w-10 h-10 rounded-full bg-surface-background flex items-center justify-center text-content-muted overflow-hidden border border-surface-border shadow-sm shrink-0">
                             <User size={20} />
                           </div>
                           <div>
@@ -106,7 +106,7 @@ const Dashboard = ({ user, onSignOut }) => {
                         </div>
                       </td>
                       <td className="py-4 px-2 text-[13px] text-content-main">{item.room}</td>
-                      <td className="py-4 px-2 text-[13px] text-content-main truncate max-w-[200px]" title={item.condition}>{item.condition}</td>
+                      <td className="py-4 px-2 text-[13px] text-content-main truncate max-w-[180px]" title={item.condition}>{item.condition}</td>
                       <td className="py-4 px-2">
                         <div className="text-[13px] font-bold text-brand-purple">
                           {item.hr}
@@ -134,17 +134,17 @@ const Dashboard = ({ user, onSignOut }) => {
         {/* Right Column - Chart */}
         <div className="flex flex-col space-y-6">
           {/* Patient Risk Distribution */}
-          <div className="bg-surface rounded-xl p-6 shadow-sm border border-surface-border flex-1 flex flex-col card-shadow">
+          <div className="bg-surface rounded-xl p-4 sm:p-6 shadow-sm border border-surface-border flex-1 flex flex-col card-shadow">
              <h2 className="text-lg font-semibold text-content-main mb-2">Member Risk Distribution</h2>
-             <div className="flex-1 flex flex-col relative items-center justify-center min-h-[250px]">
-                <ResponsiveContainer width="100%" height={250}>
+             <div className="flex-1 flex flex-col relative items-center justify-center min-h-[220px]">
+                <ResponsiveContainer width="100%" height={230}>
                   <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={70}
-                      outerRadius={100}
+                      innerRadius={65}
+                      outerRadius={95}
                       paddingAngle={2}
                       dataKey="value"
                       stroke="none"
@@ -168,11 +168,11 @@ const Dashboard = ({ user, onSignOut }) => {
              </div>
              
              {/* Custom Legend */}
-             <div className="grid grid-cols-2 gap-3 mt-6">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4 sm:mt-6">
                {chartData.map((item, idx) => (
                  <div key={idx} className="flex items-center space-x-2">
-                   <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: item.color }}></div>
-                   <div className="text-xs font-medium text-content-muted">{item.name}</div>
+                   <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: item.color }}></div>
+                   <div className="text-xs font-medium text-content-muted truncate">{item.name}</div>
                  </div>
                ))}
              </div>

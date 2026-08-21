@@ -110,7 +110,7 @@ const Member360 = ({ user, onSignOut }) => {
 
         {/* Tabs */}
         <div className="bg-surface rounded-xl shadow-sm overflow-hidden mb-8 border border-surface-border card-shadow">
-          <div className="flex flex-wrap border-b border-surface-border bg-surface-background">
+          <div className="flex overflow-x-auto whitespace-nowrap border-b border-surface-border bg-surface-background">
             {[
               { id: 'profile', label: 'Profile', icon: <User size={18} /> },
               { id: 'hcc', label: 'HCC Codes', icon: <Activity size={18} /> },

@@ -89,19 +89,19 @@ export default function UnflaggedMembers({ user, onSignOut }) {
         </div>
 
         {/* Main Card */}
-        <div className="bg-surface rounded-xl shadow-sm border border-surface-border p-6 mb-8 card-shadow">
-          <div className="flex justify-between items-center mb-6">
+        <div className="bg-surface rounded-xl shadow-sm border border-surface-border p-4 sm:p-6 mb-8 card-shadow">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <h2 className="text-xl font-bold text-content-main mb-1">Queue: Marked for Review</h2>
               <p className="text-sm text-content-muted">
                 {members.length} members awaiting final review and processing
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <button className="px-4 py-2 border border-brand-purple text-brand-purple font-medium rounded-lg hover:bg-brand-purple/5 transition-colors text-sm">
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <button className="px-4 py-2 border border-brand-purple text-brand-purple font-medium rounded-lg hover:bg-brand-purple/5 transition-colors text-sm flex-1 sm:flex-none text-center">
                 Prioritize Members
               </button>
-              <div className="flex items-center gap-2 px-4 py-2 bg-status-success/10 text-status-success font-medium rounded-lg text-sm">
+              <div className="flex items-center gap-2 px-4 py-2 bg-status-success/10 text-status-success font-medium rounded-lg text-sm flex-1 sm:flex-none justify-center">
                 <CheckCircle2 size={18} />
                 Scores Calculated
               </div>
@@ -201,16 +201,16 @@ export default function UnflaggedMembers({ user, onSignOut }) {
                   </div>
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-surface-border bg-surface-background flex justify-end items-center gap-3">
+              <div className="px-4 sm:px-6 py-4 border-t border-surface-border bg-surface-background flex flex-col sm:flex-row justify-end items-center gap-3">
                 <button
                   onClick={handleMarkForReview}
-                  className="px-4 py-2 bg-surface border border-surface-border text-content-main font-medium rounded-lg hover:bg-surface-background transition-colors text-sm shadow-sm"
+                  className="w-full sm:w-auto px-4 py-2 bg-surface border border-surface-border text-content-main font-medium rounded-lg hover:bg-surface-background transition-colors text-sm shadow-sm text-center"
                 >
                   Mark for Review
                 </button>
                 <button
                   onClick={handleProceed}
-                  className="px-4 py-2 bg-brand-purple text-white font-medium rounded-lg hover:bg-brand-purple/90 transition-colors text-sm shadow-sm"
+                  className="w-full sm:w-auto px-4 py-2 bg-brand-purple text-white font-medium rounded-lg hover:bg-brand-purple/90 transition-colors text-sm shadow-sm text-center"
                 >
                   Proceed
                 </button>

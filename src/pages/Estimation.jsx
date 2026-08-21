@@ -127,7 +127,7 @@ const Estimation = ({ user, onSignOut }) => {
 
         {/* Data Table */}
         <div className="bg-surface rounded-xl shadow-sm border border-surface-border overflow-hidden card-shadow">
-          <div className="p-5 md:p-6 border-b border-surface-border flex justify-between items-center bg-surface-background">
+          <div className="p-4 sm:p-5 md:p-6 border-b border-surface-border flex justify-between items-center bg-surface-background">
             <h2 className="text-lg md:text-xl font-bold text-content-main">Member Estimation Breakdown</h2>
           </div>
           
