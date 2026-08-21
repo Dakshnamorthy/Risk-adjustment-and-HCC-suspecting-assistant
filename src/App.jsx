@@ -11,6 +11,7 @@ import UnflaggedMembers from './pages/UnflaggedMembers';
 import FlaggedMembers from './pages/FlaggedMembers';
 import AgentAnalysis from './pages/AgentAnalysis';
 import Estimation from './pages/Estimation';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -127,13 +128,13 @@ function App() {
             <Navigate to="/login" replace />
           } 
         />
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
-            isAuthenticated ? 
-            <Navigate to="/dashboard" replace /> : 
-            <Navigate to="/login" replace />
-          } 
+            isAuthenticated ?
+            <Navigate to="/dashboard" replace /> :
+            <LandingPage />
+          }
         />
       </Routes>
     </Router>
