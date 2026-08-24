@@ -1,34 +1,51 @@
-# Logs
-logs
-*.log
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+myenv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Packaging and type-checker output
+build/
+dist/
+*.egg-info/
+.eggs/
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# Frontend dependencies and build output
+node_modules/
+frontend/dist/
+frontend/.vite/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Uploaded/generated data
+*.sqlite
+*.sqlite3
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IDE and OS files
+.vscode/
+.idea/
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Build files
-/build
-/.next
-/out
+Thumbs.db
