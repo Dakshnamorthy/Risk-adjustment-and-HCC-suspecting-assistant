@@ -10,8 +10,18 @@ from app.agents.explanation_agent import ExplanationAgent
 from app.services.ml_risk_model import MLRiskModel
 from app.services.ml_feature_builder import build_ml_features
 
+ml_model = None
 
-ml_model = MLRiskModel("/Users/vishal/Desktop/agentic_system/app/ML_model/risk_model.pkl")
+def get_ml_model():
+    global ml_model
+    if ml_model is None:
+        print("🔥 Loading ML model lazily...")
+        from app.services.ml_risk_model import MLRiskModel
+
+        ml_model = MLRiskModel(
+            "/Users/vishal/Desktop/agentic_system/app/ML_model/rerun.pkl"
+        )
+    return ml_model
 
 # -------------------------------
 # LOAD PATIENT
@@ -104,6 +114,7 @@ def risk_service_node(state):
         features = build_ml_features(patient)
         print("[DEBUG] ML Features:", features)
 
+        ml_model = get_ml_model()
         score, level = ml_model.predict(features)
 
         output = {
