@@ -25,7 +25,7 @@ const MainLayout = ({ children, user, onSignOut }) => {
       <div className="flex-1 flex flex-col overflow-hidden relative z-10 md:ml-[72px] lg:ml-60 transition-all duration-300 w-full max-w-full">
         <Header user={user} toggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
         
-        <main className="flex-1 overflow-y-auto p-3 sm:p-5 md:p-6 lg:p-8 pt-3 sm:pt-4">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pt-2">
           {children}
         </main>
       </div>

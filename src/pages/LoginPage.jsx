@@ -1,24 +1,48 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authAPI } from '../services/apiService';
 
 const LoginPage = ({ onSignIn }) => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    
     if (!username || !password) {
       setError('Please fill in all fields');
       return;
     }
-    onSignIn({
-      username,
-      name: 'Care Manager',
-      role: 'Insurance Reviewer'
-    });
-    navigate('/dashboard');
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const data = await authAPI.login(username, password);
+
+      // Successful login
+      onSignIn({
+        id: data.user.id,
+        username: data.user.username,
+        name: data.user.username, // Use username as name for display
+        role: data.user.role || 'User'
+      });
+      
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Login error:', err);
+      if (err.status === 401) {
+        setError('Invalid username or password');
+      } else if (err.status === 403) {
+        setError('Your account is inactive. Please contact support.');
+      } else {
+        setError('Unable to connect to server. Please try again.');
+      }
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,9 +101,10 @@ const LoginPage = ({ onSignIn }) => {
 
           <button
             type="submit"
-            className="w-full bg-brand-blue hover:bg-brand-blue/90 text-white font-bold py-3 rounded-lg shadow-sm transition-all mt-4"
+            disabled={loading}
+            className="w-full bg-brand-blue hover:bg-brand-blue/90 text-white font-bold py-3 rounded-lg shadow-sm transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 

@@ -1,46 +1,116 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import MainLayout from '../components/MainLayout';
-import { Activity, BarChart2, FileText, CheckCircle2, TrendingUp, Star, Target, ShieldCheck } from 'lucide-react';
+import { 
+  Activity, BarChart2, FileText, CheckCircle2, TrendingUp, 
+  Target, ShieldCheck, Users, Layers 
+} from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
+
+// --- MOCK DATA ---
+const MOCK_DATA = [
+  { patient_id: 'PT005700', icd10_codes: ['E11.9', 'I10'], hcc_codes: ['HCC19'], classification_status: 'FLAGGED', risk_score: 1.45, doc_status: 'Complete', mapped: true, approved: true },
+  { patient_id: 'PT008647', icd10_codes: ['J44.9'], hcc_codes: ['HCC111'], classification_status: 'UNFLAGGED', risk_score: 0.85, doc_status: 'Complete', mapped: true, approved: true },
+  { patient_id: 'PT001190', icd10_codes: ['I50.9', 'I10', 'E11.22'], hcc_codes: ['HCC85', 'HCC18'], classification_status: 'FLAGGED', risk_score: 2.15, doc_status: 'Needs Review', mapped: true, approved: false },
+  { patient_id: 'PT001306', icd10_codes: ['F32.9'], hcc_codes: ['HCC59'], classification_status: 'UNFLAGGED', risk_score: 1.10, doc_status: 'Complete', mapped: true, approved: true },
+  { patient_id: 'PT001473', icd10_codes: ['M54.5'], hcc_codes: [], classification_status: 'UNFLAGGED', risk_score: 0.75, doc_status: 'Partial', mapped: false, approved: true },
+  { patient_id: 'PT002717', icd10_codes: ['C34.90', 'J44.9', 'I50.9'], hcc_codes: ['HCC8', 'HCC111', 'HCC85'], classification_status: 'FLAGGED', risk_score: 3.20, doc_status: 'Complete', mapped: true, approved: true },
+  { patient_id: 'PT003821', icd10_codes: ['N18.3'], hcc_codes: ['HCC138'], classification_status: 'FLAGGED', risk_score: 1.85, doc_status: 'Complete', mapped: true, approved: true },
+  { patient_id: 'PT005233', icd10_codes: ['E11.9'], hcc_codes: ['HCC19'], classification_status: 'UNFLAGGED', risk_score: 0.95, doc_status: 'Complete', mapped: true, approved: false },
+  { patient_id: 'PT006112', icd10_codes: ['I10'], hcc_codes: [], classification_status: 'UNFLAGGED', risk_score: 0.45, doc_status: 'Complete', mapped: false, approved: true },
+  { patient_id: 'PT007881', icd10_codes: ['E11.9', 'N18.4'], hcc_codes: ['HCC19', 'HCC137'], classification_status: 'FLAGGED', risk_score: 2.75, doc_status: 'Partial', mapped: true, approved: true },
+];
+
+const MOCK_TREND_DATA = [
+  { month: 'Jan', hccs: 85 },
+  { month: 'Feb', hccs: 92 },
+  { month: 'Mar', hccs: 110 },
+  { month: 'Apr', hccs: 105 },
+  { month: 'May', hccs: 125 },
+  { month: 'Jun', hccs: 142 },
+];
+
+const COLORS = {
+  flagged: '#EF4444',
+  unflagged: '#10B981',
+  mapped: '#3B82F6',
+  unmapped: '#F59E0B',
+  complete: '#10B981',
+  partial: '#F59E0B',
+  review: '#EF4444'
+};
 
 const Analytics = ({ user, onSignOut }) => {
   const [timeFrame, setTimeFrame] = useState('month');
 
-  const analyticsData = {
-    hccCapture: {
-      total: 1856,
-      trend: '+8.3%',
-      byMonth: [120, 145, 168, 192, 210, 245, 280, 310, 345, 380, 420, 456]
-    },
-    riskScore: {
-      avg: 1.82,
-      trend: '+2.1%',
-      distribution: [
-        { range: '0-1', count: 2400, percentage: 25 },
-        { range: '1-2', count: 3600, percentage: 38 },
-        { range: '2-3', count: 2200, percentage: 23 },
-        { range: '3+', count: 800, percentage: 14 }
-      ]
-    },
-    documentation: {
-      rate: 92,
-      trend: '+1.2%',
-      status: [
-        { status: 'Complete', count: 9200, percentage: 92 },
-        { status: 'Incomplete', count: 600, percentage: 6 },
-        { status: 'Missing', count: 200, percentage: 2 }
-      ]
-    },
-    approval: {
-      rate: 87,
-      trend: '+3.4%'
-    }
-  };
+  const stats = useMemo(() => {
+    let totalHcc = 0;
+    let riskSum = 0;
+    let mappedCount = 0;
+    let approvedCount = 0;
+    let flaggedCount = 0;
+    let unflaggedCount = 0;
 
-  const metrics = [
-    { label: 'Total HCCs Captured', value: '1,856', icon: <Activity size={24} />, color: 'brand-blue' },
-    { label: 'Average Risk Score', value: '1.82', icon: <BarChart2 size={24} />, color: 'brand-purple' },
-    { label: 'Documentation Rate', value: '92%', icon: <FileText size={24} />, color: 'status-warning' },
-    { label: 'Approval Rate', value: '87%', icon: <CheckCircle2 size={24} />, color: 'status-success' },
+    const riskDist = { '0-1': 0, '1-2': 0, '2-3': 0, '3+': 0 };
+    const docDist = { 'Complete': 0, 'Partial': 0, 'Needs Review': 0 };
+
+    MOCK_DATA.forEach(m => {
+      totalHcc += m.hcc_codes.length;
+      riskSum += m.risk_score;
+      if (m.mapped) mappedCount++;
+      if (m.approved) approvedCount++;
+      if (m.classification_status === 'FLAGGED') flaggedCount++;
+      if (m.classification_status === 'UNFLAGGED') unflaggedCount++;
+
+      if (m.risk_score < 1) riskDist['0-1']++;
+      else if (m.risk_score < 2) riskDist['1-2']++;
+      else if (m.risk_score < 3) riskDist['2-3']++;
+      else riskDist['3+']++;
+
+      if (docDist[m.doc_status] !== undefined) docDist[m.doc_status]++;
+    });
+
+    const total = MOCK_DATA.length;
+
+    return {
+      totalMembers: total,
+      totalHcc,
+      avgRisk: (riskSum / total).toFixed(2),
+      mappingCoverage: Math.round((mappedCount / total) * 100),
+      unmappedCount: total - mappedCount,
+      mappedCount,
+      approvalRate: Math.round((approvedCount / total) * 100),
+      flaggedCount,
+      unflaggedCount,
+      riskData: [
+        { name: '0-1', count: riskDist['0-1'], pct: Math.round((riskDist['0-1']/total)*100) },
+        { name: '1-2', count: riskDist['1-2'], pct: Math.round((riskDist['1-2']/total)*100) },
+        { name: '2-3', count: riskDist['2-3'], pct: Math.round((riskDist['2-3']/total)*100) },
+        { name: '3+', count: riskDist['3+'], pct: Math.round((riskDist['3+']/total)*100) },
+      ],
+      docData: [
+        { name: 'Complete', count: docDist['Complete'], pct: Math.round((docDist['Complete']/total)*100), color: COLORS.complete },
+        { name: 'Partial', count: docDist['Partial'], pct: Math.round((docDist['Partial']/total)*100), color: COLORS.partial },
+        { name: 'Needs Review', count: docDist['Needs Review'], pct: Math.round((docDist['Needs Review']/total)*100), color: COLORS.review },
+      ],
+      classData: [
+        { name: 'FLAGGED', value: flaggedCount, color: COLORS.flagged },
+        { name: 'UNFLAGGED', value: unflaggedCount, color: COLORS.unflagged },
+      ],
+      mapData: [
+        { name: 'Mapped', value: mappedCount, color: COLORS.mapped },
+        { name: 'Unmapped', value: total - mappedCount, color: COLORS.unmapped },
+      ]
+    };
+  }, []);
+
+  const topMetrics = [
+    { label: 'Total HCCs Captured', value: stats.totalHcc, icon: <Activity size={24} />, color: 'brand-blue' },
+    { label: 'Average Risk Score', value: stats.avgRisk, icon: <BarChart2 size={24} />, color: 'brand-purple' },
+    { label: 'Mapping Coverage', value: `${stats.mappingCoverage}%`, icon: <Layers size={24} />, color: 'status-warning' },
+    { label: 'Approval Rate', value: `${stats.approvalRate}%`, icon: <CheckCircle2 size={24} />, color: 'status-success' },
   ];
 
   return (
@@ -53,10 +123,9 @@ const Analytics = ({ user, onSignOut }) => {
               <BarChart2 size={28} className="text-brand-blue" />
               Analytics & Reports
             </h1>
-            <p className="text-content-muted">HCC capture, risk score, and documentation metrics</p>
+            <p className="text-content-muted">HCC capture, risk score, classification, and mapping metrics</p>
           </div>
           
-          {/* Time Frame Selector */}
           <div className="bg-surface rounded-lg shadow-sm border border-surface-border p-1.5 inline-flex card-shadow">
             {['week', 'month', 'quarter', 'year'].map((tf) => (
               <button
@@ -74,9 +143,9 @@ const Analytics = ({ user, onSignOut }) => {
           </div>
         </div>
 
-        {/* Main Metrics */}
+        {/* Top KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
-          {metrics.map((metric, idx) => {
+          {topMetrics.map((metric, idx) => {
             const borderColors = {
               'status-success': 'border-status-success',
               'brand-blue': 'border-brand-blue',
@@ -109,136 +178,134 @@ const Analytics = ({ user, onSignOut }) => {
           })}
         </div>
 
-        {/* HCC Capture Chart */}
+        {/* HCC Capture Trend Chart */}
         <div className="bg-surface rounded-xl shadow-sm p-6 mb-6 md:mb-8 border border-surface-border card-shadow">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-content-main flex items-center gap-2">
               <Activity size={20} className="text-brand-blue" />
-              HCC Capture Trend
+              HCC Capture Trend (Last 6 Months)
             </h2>
-            <span className="text-status-success font-bold text-sm bg-status-success/10 px-2.5 py-1 rounded-md">+8.3% YoY</span>
           </div>
-          <div className="overflow-x-auto w-full pb-2">
-            <div className="flex items-end justify-between gap-1 sm:gap-2 h-64 min-w-[500px]">
-              {analyticsData.hccCapture.byMonth.map((value, idx) => (
-                <div key={idx} className="flex flex-col items-center flex-1">
-                  <div
-                    className="w-full bg-brand-blue rounded-t-sm hover:bg-brand-blue/80 transition-colors"
-                    style={{ height: `${(value / 500) * 100}%` }}
-                    title={`Month ${idx + 1}: ${value} HCCs`}
-                  ></div>
-                  <p className="text-xs text-content-muted mt-2 font-medium">M{idx + 1}</p>
-                </div>
-              ))}
-            </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={MOCK_TREND_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} />
+                <RechartsTooltip 
+                  cursor={{ fill: '#F3F4F6' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="hccs" name="Captured HCCs" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Risk Score Distribution */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 md:mb-8">
-          {/* Risk Distribution */}
+          
+          {/* Risk Score Distribution */}
           <div className="bg-surface rounded-xl shadow-sm p-6 border border-surface-border card-shadow">
             <h2 className="text-lg font-bold text-content-main mb-6 flex items-center gap-2">
               <TrendingUp size={20} className="text-brand-purple" />
               Risk Score Distribution
             </h2>
             <div className="space-y-5">
-              {analyticsData.riskScore.distribution.map((item, idx) => (
+              {stats.riskData.map((item, idx) => (
                 <div key={idx}>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-semibold text-content-main">{item.range}</span>
-                    <span className="font-bold text-content-main">{item.count.toLocaleString()}</span>
+                    <span className="font-semibold text-content-main">{item.name} RAF</span>
+                    <span className="font-bold text-content-main">{item.count} Members</span>
                   </div>
                   <div className="w-full bg-surface-background rounded-full h-2.5 border border-surface-border">
                     <div
                       className="bg-brand-purple h-full rounded-full"
-                      style={{ width: `${item.percentage}%` }}
+                      style={{ width: `${item.pct}%` }}
                     ></div>
                   </div>
-                  <p className="text-xs text-content-muted mt-1 font-medium">{item.percentage}% of Population</p>
+                  <p className="text-xs text-content-muted mt-1 font-medium">{item.pct}% of Population</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Documentation Status */}
-          <div className="bg-surface rounded-xl shadow-sm p-6 border border-surface-border card-shadow">
-            <h2 className="text-lg font-bold text-content-main mb-6 flex items-center gap-2">
-              <FileText size={20} className="text-status-warning" />
-              Documentation Status
-            </h2>
-            <div className="space-y-4">
-              {analyticsData.documentation.status.map((item, idx) => {
-                const bgColors = ['bg-status-success/10 text-status-success', 'bg-status-warning/10 text-status-warning', 'bg-status-danger/10 text-status-danger'];
-                return (
-                  <div key={idx} className="flex items-center justify-between p-4 rounded-lg bg-surface-background border border-surface-border">
-                    <div className={`px-3 py-1 rounded-md font-bold text-sm ${bgColors[idx]}`}>
-                      {item.status}
-                    </div>
-                    <div className="text-right">
-                      <span className="font-bold text-content-main block">{item.count.toLocaleString()}</span>
-                      <span className="text-content-muted text-xs font-medium">{item.percentage}%</span>
-                    </div>
-                  </div>
-                );
-              })}
+          {/* Classification & Mapping Summaries */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Classification Summary */}
+            <div className="bg-surface rounded-xl shadow-sm p-6 border border-surface-border card-shadow flex flex-col items-center justify-center">
+              <h2 className="text-md font-bold text-content-main mb-4 self-start flex items-center gap-2">
+                <Users size={18} className="text-brand-blue" />
+                Classification
+              </h2>
+              <div className="w-full h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stats.classData} innerRadius={35} outerRadius={60} dataKey="value" stroke="none">
+                      {stats.classData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-content-muted mt-2 text-center w-full border-t border-surface-border pt-2">
+                Out of {stats.totalMembers} classified members
+              </p>
+            </div>
+
+            {/* Mapping Summary */}
+            <div className="bg-surface rounded-xl shadow-sm p-6 border border-surface-border card-shadow flex flex-col items-center justify-center">
+              <h2 className="text-md font-bold text-content-main mb-4 self-start flex items-center gap-2">
+                <Layers size={18} className="text-status-warning" />
+                ICD-10 Mapping
+              </h2>
+              <div className="w-full h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={stats.mapData} innerRadius={35} outerRadius={60} dataKey="value" stroke="none">
+                      {stats.mapData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="text-xs text-content-muted mt-2 text-center w-full border-t border-surface-border pt-2">
+                {stats.mappedCount} Mapped / {stats.unmappedCount} Unmapped
+              </p>
             </div>
           </div>
+
         </div>
 
-        {/* Approval Rate */}
-        <div className="bg-surface rounded-xl shadow-sm p-6 mb-6 md:mb-8 border border-surface-border card-shadow">
+        {/* Documentation Status */}
+        <div className="bg-surface rounded-xl shadow-sm p-6 mb-6 border border-surface-border card-shadow">
           <h2 className="text-lg font-bold text-content-main mb-6 flex items-center gap-2">
-            <ShieldCheck size={20} className="text-status-success" />
-            Approval Rate
+            <FileText size={20} className="text-status-warning" />
+            Documentation Status Breakdown
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center flex flex-col items-center justify-center">
-              <div className="relative w-40 h-40 mx-auto mb-4">
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-surface-border, #E5EAF0)" strokeWidth="8" />
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="40"
-                    fill="none"
-                    stroke="#0F9F7F"
-                    strokeWidth="8"
-                    strokeDasharray={`${2.51 * analyticsData.approval.rate} ${251}`}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-status-success">{analyticsData.approval.rate}%</p>
-                    <p className="text-content-muted text-sm font-medium">Approved</p>
+            {stats.docData.map((item, idx) => {
+              const bgColors = ['bg-status-success/10 border-status-success/20', 'bg-status-warning/10 border-status-warning/20', 'bg-status-danger/10 border-status-danger/20'];
+              const textColors = ['text-status-success', 'text-status-warning', 'text-status-danger'];
+              
+              return (
+                <div key={idx} className={`p-4 rounded-lg border ${bgColors[idx]}`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <p className={`font-bold text-sm ${textColors[idx]}`}>{item.name}</p>
+                    <p className="text-content-main font-bold text-xl">{item.count}</p>
                   </div>
+                  <div className="w-full bg-surface-background rounded-full h-2 border border-surface-border">
+                    <div className="h-full rounded-full" style={{ width: `${item.pct}%`, backgroundColor: item.color }}></div>
+                  </div>
+                  <p className="text-xs text-content-muted mt-2 font-medium">{item.pct}% of cohort</p>
                 </div>
-              </div>
-              <p className="text-status-success font-bold text-sm bg-status-success/10 px-3 py-1.5 rounded-full inline-block">{analyticsData.approval.trend} from last month</p>
-            </div>
-
-            <div className="col-span-2 space-y-4 flex flex-col justify-center">
-              <div className="bg-status-success/5 p-4 rounded-lg border border-status-success/20">
-                <p className="text-content-main mb-2 text-sm"><span className="font-bold">8,700 HCCs</span> approved for risk adjustment</p>
-                <div className="w-full bg-surface-background rounded-full h-2 border border-surface-border">
-                  <div className="bg-status-success h-full rounded-full" style={{width: '87%'}}></div>
-                </div>
-              </div>
-
-              <div className="bg-status-warning/5 p-4 rounded-lg border border-status-warning/20">
-                <p className="text-content-main mb-2 text-sm"><span className="font-bold">1,100 HCCs</span> pending review</p>
-                <div className="w-full bg-surface-background rounded-full h-2 border border-surface-border">
-                  <div className="bg-status-warning h-full rounded-full" style={{width: '11%'}}></div>
-                </div>
-              </div>
-
-              <div className="bg-status-danger/5 p-4 rounded-lg border border-status-danger/20">
-                <p className="text-content-main mb-2 text-sm"><span className="font-bold">200 HCCs</span> rejected</p>
-                <div className="w-full bg-surface-background rounded-full h-2 border border-surface-border">
-                  <div className="bg-status-danger h-full rounded-full" style={{width: '2%'}}></div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -251,19 +318,21 @@ const Analytics = ({ user, onSignOut }) => {
           <ul className="space-y-4">
             <li className="flex items-start gap-3">
               <TrendingUp className="text-brand-blue mt-0.5 shrink-0" size={18} />
-              <p className="text-content-main text-sm leading-relaxed"><span className="font-semibold">HCC capture increased by 8.3% YoY</span>, indicating improved documentation and clinical coding.</p>
+              <p className="text-content-main text-sm leading-relaxed">
+                <span className="font-semibold">Consistent HCC Mapping:</span> The current coverage rate of {stats.mappingCoverage}% successfully identified {stats.totalHcc} HCC codes across the population.
+              </p>
             </li>
             <li className="flex items-start gap-3">
-              <Star className="text-status-warning mt-0.5 shrink-0" size={18} />
-              <p className="text-content-main text-sm leading-relaxed"><span className="font-semibold">Average risk score of 1.82 RAF</span> represents moderate member complexity and appropriate resource allocation.</p>
+              <Users className="text-brand-purple mt-0.5 shrink-0" size={18} />
+              <p className="text-content-main text-sm leading-relaxed">
+                <span className="font-semibold">Classification Parity:</span> Out of {stats.totalMembers} classified members, {stats.flaggedCount} were FLAGGED and {stats.unflaggedCount} were UNFLAGGED by the Agent.
+              </p>
             </li>
             <li className="flex items-start gap-3">
-              <CheckCircle2 className="text-status-success mt-0.5 shrink-0" size={18} />
-              <p className="text-content-main text-sm leading-relaxed"><span className="font-semibold">92% documentation completeness rate</span> exceeds industry standards, supporting accurate HCC mapping.</p>
-            </li>
-            <li className="flex items-start gap-3">
-              <Target className="text-brand-purple mt-0.5 shrink-0" size={18} />
-              <p className="text-content-main text-sm leading-relaxed"><span className="font-semibold">87% approval rate</span> demonstrates high-quality AI recommendations and effective care manager reviews.</p>
+              <ShieldCheck className="text-status-success mt-0.5 shrink-0" size={18} />
+              <p className="text-content-main text-sm leading-relaxed">
+                <span className="font-semibold">{stats.approvalRate}% Final Approval Rate:</span> Clinical reviewers have confirmed the vast majority of AI recommendations.
+              </p>
             </li>
           </ul>
         </div>

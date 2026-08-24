@@ -11,30 +11,33 @@ import UnflaggedMembers from './pages/UnflaggedMembers';
 import FlaggedMembers from './pages/FlaggedMembers';
 import AgentAnalysis from './pages/AgentAnalysis';
 import Estimation from './pages/Estimation';
-import LandingPage from './pages/LandingPage';
+import { authAPI } from './services/apiService';
+
+function ProtectedRoute({ isAuthenticated, children }) {
+  if (isAuthenticated === null) return null;
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('cts_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
-    }
+    authAPI.me()
+      .then(data => { setUser(data.user); setIsAuthenticated(true); })
+      .catch(() => { setUser(null); setIsAuthenticated(false); });
   }, []);
 
   const handleSignIn = (userData) => {
     setIsAuthenticated(true);
     setUser(userData);
-    localStorage.setItem('cts_user', JSON.stringify(userData));
   };
 
   const handleSignOut = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem('cts_user');
+    authAPI.logout().finally(() => {
+      setIsAuthenticated(false);
+      setUser(null);
+    });
   };
 
   return (
@@ -51,86 +54,68 @@ function App() {
         <Route 
           path="/dashboard" 
           element={
-            isAuthenticated ? 
-            <Dashboard user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><Dashboard user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/members" 
           element={
-            isAuthenticated ? 
-            <Members user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><Members user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/member-360" 
           element={
-            isAuthenticated ? 
-            <Member360 user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><Member360 user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/analytics" 
           element={
-            isAuthenticated ? 
-            <Analytics user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><Analytics user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/hcc-mapping" 
           element={
-            isAuthenticated ? 
-            <HccMapping user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><HccMapping user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/ml-prediction" 
           element={
-            isAuthenticated ? 
-            <MLPrediction user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><MLPrediction user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/unflagged-members" 
           element={
-            isAuthenticated ? 
-            <UnflaggedMembers user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><UnflaggedMembers user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/flagged-members" 
           element={
-            isAuthenticated ? 
-            <FlaggedMembers user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><FlaggedMembers user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/agent-analysis" 
           element={
-            isAuthenticated ? 
-            <AgentAnalysis user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><AgentAnalysis user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
         <Route 
           path="/estimation" 
           element={
-            isAuthenticated ? 
-            <Estimation user={user} onSignOut={handleSignOut} /> : 
-            <Navigate to="/login" replace />
+            <ProtectedRoute isAuthenticated={isAuthenticated}><Estimation user={user} onSignOut={handleSignOut} /></ProtectedRoute>
           } 
         />
-        <Route
-          path="/"
-          element={<LandingPage />}
+        <Route 
+          path="/" 
+          element={
+            <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
+          } 
         />
       </Routes>
     </Router>

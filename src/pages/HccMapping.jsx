@@ -1,84 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '../components/MainLayout';
-import { UploadCloud, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { UploadCloud, FileSpreadsheet, Loader2, CheckCircle2, AlertTriangle, ArrowRight, ShieldCheck, AlertCircle, Users, Brain, Eye, Play } from 'lucide-react';
+import { hccAPI } from '../services/apiService';
 
 const HccMapping = ({ user, onSignOut }) => {
-  // State Machine
-  const [step, setStep] = useState(1); // 1: Upload, 2: Mapping, 3: Stratification
+  // State Management
   const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isClassifying, setIsClassifying] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [uploadResults, setUploadResults] = useState(null);
   
-  const [isMapping, setIsMapping] = useState(false);
-  const [mappedData, setMappedData] = useState(null);
+  // Results and pagination
+  const [results, setResults] = useState(null);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   
-  const [isChecking, setIsChecking] = useState(false);
-  const [flaggedMembers, setFlaggedMembers] = useState(null);
-  const [unflaggedMembers, setUnflaggedMembers] = useState(null);
+  // Classification results
+  const [classificationResults, setClassificationResults] = useState(null);
+  const [assignmentStatus, setAssignmentStatus] = useState({ agent: false, ml: false });
 
-  // Popup State
-  const [popupMessage, setPopupMessage] = useState(null);
+  // Load results on component mount
+  useEffect(() => {
+    loadResults(1);
+    loadClassificationStats();
+  }, []);
 
-  // Handlers
+  // Check if classification has already been run (persists across page refresh)
+  const loadClassificationStats = async () => {
+    try {
+      const stats = await hccAPI.getStats();
+      if (stats && (stats.flagged_count > 0 || stats.unflagged_count > 0)) {
+        setClassificationResults({
+          total_classified: stats.flagged_count + stats.unflagged_count,
+          flagged_count: stats.flagged_count,
+          unflagged_count: stats.unflagged_count
+        });
+      }
+    } catch (err) {
+      // Non-critical — classification stats just won't pre-load
+      console.error('Error loading classification stats:', err);
+    }
+  };
+
+  const loadResults = async (page = 1) => {
+    setLoadingResults(true);
+    try {
+      const resultsData = await hccAPI.getResults({
+        page,
+        page_size: 15  // Show only 15 records per page as required
+      });
+      setResults(resultsData);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error loading results:', error);
+    } finally {
+      setLoadingResults(false);
+    }
+  };
+
   const handleFileUpload = (e) => {
     const uploadedFile = e.target.files[0];
     if (uploadedFile) {
       setFile(uploadedFile);
-      setStep(1); // Stay on step 1, but file is loaded
+      setUploadError(null);
+      setUploadResults(null);
+      setClassificationResults(null);
+      setAssignmentStatus({ agent: false, ml: false });
     }
   };
 
-  const handleMapToHCC = () => {
-    setIsMapping(true);
-    // Simulate backend python script processing time
-    setTimeout(() => {
-      setMappedData([
-        { patientId: 'PT-1001', age: 72, sex: 'M', icd: 'E11.9', hcc: 'HCC-019' },
-        { patientId: 'PT-1002', age: 65, sex: 'F', icd: 'I50.9', hcc: 'HCC-085' },
-        { patientId: 'PT-1003', age: 81, sex: 'M', icd: 'J44.9', hcc: 'HCC-111' },
-        { patientId: 'PT-1004', age: 59, sex: 'F', icd: 'F32.9', hcc: 'HCC-059' },
-        { patientId: 'PT-1005', age: 68, sex: 'M', icd: 'I10', hcc: 'HCC-018' }
-      ]);
-      setIsMapping(false);
-      setStep(2);
-    }, 2000);
+  const handleUploadAndMap = async () => {
+    if (!file) return;
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const result = await hccAPI.uploadCSV(file);
+      setUploadResults(result);
+      // Reload results to show new data
+      await loadResults(1);
+    } catch (err) {
+      setUploadError(err.message || 'Failed to process CSV file and map HCC codes.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleCheckMembers = () => {
-    setIsChecking(true);
-    // Simulate backend python script processing time
-    setTimeout(() => {
-      setFlaggedMembers([
-        { id: 'MEM-8821', name: 'James Wilson', plan: 'MA-PD', missingHcc: 'HCC-019 (Diabetes)', estimatedRaf: '+0.104', status: 'High Priority' },
-        { id: 'MEM-4192', name: 'Elena Rostova', plan: 'MA Only', missingHcc: 'HCC-111 (COPD)', estimatedRaf: '+0.328', status: 'High Priority' },
-        { id: 'MEM-5543', name: 'David Kim', plan: 'D-SNP', missingHcc: 'HCC-022 (Morbid Obesity)', estimatedRaf: '+0.273', status: 'Medium Priority' }
-      ]);
-      
-      setUnflaggedMembers([
-        { id: 'MEM-1102', name: 'Sarah Jenkins', plan: 'MA-PD', condition: 'Hypertension (No HCC)', lastVisit: '10/12/2025' },
-        { id: 'MEM-9910', name: 'Marcus Chen', plan: 'C-SNP', condition: 'Asthma (Controlled)', lastVisit: '11/05/2025' },
-        { id: 'MEM-3321', name: 'Linda Smith', plan: 'MA-PD', condition: 'Osteoarthritis', lastVisit: '09/20/2025' }
-      ]);
-      
-      setIsChecking(false);
-      setStep(3);
-    }, 2500);
+  const handleClassifyMembers = async () => {
+    setIsClassifying(true);
+    try {
+      const result = await hccAPI.classifyMembers();
+      setClassificationResults(result);
+      // Reload results to show classification status
+      await loadResults(1);
+    } catch (err) {
+      setUploadError(err.message || 'Failed to classify members.');
+    } finally {
+      setIsClassifying(false);
+    }
+  };
+
+  const handleAssignForAgent = async () => {
+    try {
+      const result = await hccAPI.assignForAgent();
+      setAssignmentStatus(prev => ({ ...prev, agent: true }));
+      await loadResults(1);
+      await loadClassificationStats();
+      alert(`${result.successful} flagged members sent to Agent:\n${(result.patient_ids || []).join(', ')}`);
+    } catch (err) {
+      setUploadError(err.message || 'Failed to assign members for agent verification.');
+    }
+  };
+
+  const handleAssignForML = async () => {
+    try {
+      const result = await hccAPI.assignForML();
+      setAssignmentStatus(prev => ({ ...prev, ml: true }));
+      await loadResults(1);
+      await loadClassificationStats();
+      alert(`${result.successful} unflagged members sent to ML:\n${(result.patient_ids || []).join(', ')}`);
+    } catch (err) {
+      setUploadError(err.message || 'Failed to assign members for ML prediction.');
+    }
   };
 
   const handleReset = () => {
-    setStep(1);
     setFile(null);
-    setMappedData(null);
-    setFlaggedMembers(null);
-    setUnflaggedMembers(null);
-  };
-
-  const handleSendToAgent = () => {
-    setPopupMessage('Flagged members successfully sent for agent verification.');
-    setTimeout(() => setPopupMessage(null), 3000);
-  };
-
-  const handleSendToML = () => {
-    setPopupMessage('Unflagged members successfully sent for ML prediction.');
-    setTimeout(() => setPopupMessage(null), 3000);
+    setUploadResults(null);
+    setUploadError(null);
+    setClassificationResults(null);
+    setAssignmentStatus({ agent: false, ml: false });
   };
 
   return (
@@ -88,232 +140,293 @@ const HccMapping = ({ user, onSignOut }) => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 md:mb-8 gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-content-main mb-2">Patient Record Processing</h1>
-            <p className="text-content-muted text-sm md:text-base">Upload clinical records to run AI-driven HCC mapping and risk stratification.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-content-main mb-2">HCC Mapping & Classification</h1>
+            <p className="text-content-muted text-sm md:text-base">
+              Upload 2025 clinical CSV records for ICD-10 to HCC mapping using hccinfhir, then classify for workflows.
+            </p>
           </div>
-          {step > 1 && (
-             <button onClick={handleReset} className="text-sm font-semibold text-brand-blue hover:text-brand-blue/80 transition-colors">
-               Start Over
-             </button>
+          {uploadResults && (
+            <button onClick={handleReset} className="text-sm font-semibold text-brand-blue hover:text-brand-blue/80 transition-colors">
+              Upload Another CSV
+            </button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="space-y-6">
           
-          {/* Main Action Area */}
-          <div className="space-y-6">
+          {/* Step 1: File Upload & Mapping */}
+          <div className="bg-surface rounded-xl p-6 md:p-8 shadow-sm border border-surface-border">
+            <div className="flex items-center space-x-4 mb-6">
+              <div className="w-10 h-10 rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center font-bold text-lg">1</div>
+              <h2 className="text-xl font-bold text-content-main">Upload & Map 2025 Claims Data</h2>
+            </div>
             
-            {/* Step 1: File Upload & Mapping */}
-            <div className={`bg-surface rounded-xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all card-shadow ${step === 1 ? 'border-brand-blue' : 'border-surface-border'}`}>
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-10 h-10 rounded-full bg-brand-blue/10 text-brand-blue flex items-center justify-center font-bold text-lg">1</div>
-                <h2 className="text-xl font-bold text-content-main">Upload & Map Claims Data</h2>
+            {!file ? (
+              <div className="border-2 border-dashed border-surface-border rounded-xl p-8 md:p-12 flex flex-col items-center justify-center bg-surface-background hover:bg-surface-border/30 transition-colors cursor-pointer relative">
+                <input 
+                  type="file" 
+                  accept=".csv"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={handleFileUpload}
+                />
+                <UploadCloud size={48} className="text-brand-blue mb-4" />
+                <p className="text-lg font-bold text-content-main">Drag & Drop or Click to Upload</p>
+                <p className="text-sm text-content-muted mt-2">Supports 26-column .CSV 2025 patient records</p>
               </div>
-              
-              {!file ? (
-                <div className="border-2 border-dashed border-surface-border rounded-xl p-8 md:p-12 flex flex-col items-center justify-center bg-surface-background hover:bg-surface-border/30 transition-colors cursor-pointer relative">
-                  <input 
-                    type="file" 
-                    accept=".csv"
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    onChange={handleFileUpload}
-                  />
-                  <UploadCloud size={48} className="text-brand-blue mb-4" />
-                  <p className="text-lg font-bold text-content-main">Drag & Drop or Click to Upload</p>
-                  <p className="text-sm text-content-muted mt-2">Supports .CSV patient records and encounters</p>
+            ) : (
+              <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-5">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="p-3 bg-surface rounded-lg text-brand-blue shadow-sm">
+                    <FileSpreadsheet size={32} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-content-main">{file.name}</p>
+                    <p className="text-sm text-content-muted">{(file.size / 1024).toFixed(2)} KB • Ready for processing</p>
+                  </div>
                 </div>
-              ) : (
-                <div className="bg-brand-blue/5 border border-brand-blue/20 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center space-x-4 w-full sm:w-auto">
-                    <div className="p-3 bg-surface rounded-lg text-brand-blue shadow-sm">
-                      <FileSpreadsheet size={32} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-content-main">{file.name}</p>
-                      <p className="text-sm text-content-muted">{(file.size / 1024).toFixed(2)} KB • Ready for processing</p>
-                    </div>
+                
+                <button 
+                  onClick={handleUploadAndMap}
+                  disabled={isUploading}
+                  className="w-full bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-3 rounded-lg font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      <span>Mapping ICD-10 to HCC ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Map to HCC</span>
+                      <ArrowRight size={18} />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Upload Results */}
+            {uploadResults && (
+              <div className="mt-6 p-4 bg-status-success/5 border border-status-success/20 rounded-lg">
+                <div className="flex items-center space-x-2 mb-3">
+                  <CheckCircle2 className="text-status-success" size={20} />
+                  <span className="font-semibold text-status-success">Upload completed successfully!</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-content-muted">Total Records:</span>
+                    <span className="ml-2 font-bold text-content-main">{uploadResults.total_records}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-content-muted">Mapped:</span>
+                    <span className="ml-2 font-bold text-status-success">{uploadResults.mapped_records}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-content-muted">Unmapped:</span>
+                    <span className="ml-2 font-bold text-status-danger">{uploadResults.unmapped_records}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Upload Error */}
+            {uploadError && (
+              <div className="flex items-center space-x-3 p-4 bg-status-danger/5 border border-status-danger/20 rounded-lg mt-4">
+                <AlertCircle className="text-status-danger shrink-0" size={20} />
+                <p className="text-sm text-status-danger font-medium">{uploadError}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Step 2: Classification */}
+          {(uploadResults || (results && results.records && results.records.length > 0)) && (
+            <div className="bg-surface rounded-xl p-6 md:p-8 shadow-sm border border-surface-border">
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-lg">2</div>
+                <h2 className="text-xl font-bold text-content-main">Check Member Classification</h2>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-content-muted mb-4">
+                  Run classification pipeline on all uploaded patient records to determine FLAGGED or UNFLAGGED risk status.
+                </p>
+                
+                <button 
+                  onClick={handleClassifyMembers}
+                  disabled={isClassifying}
+                  className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold shadow-sm transition-all flex items-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isClassifying ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      <span>Classifying current batch...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={18} />
+                      <span>Classify All Members</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Classification Results */}
+              {classificationResults && (
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <CheckCircle2 className="text-amber-600" size={20} />
+                    <span className="font-semibold text-amber-800">Classification completed!</span>
                   </div>
                   
-                  {step === 1 && (
-                    <button 
-                      onClick={handleMapToHCC}
-                      disabled={isMapping}
-                      className="w-full sm:w-auto bg-brand-blue hover:bg-brand-blue/90 text-white px-6 py-2.5 rounded-lg font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isMapping ? (
-                        <>
-                          <Loader2 className="animate-spin" size={18} />
-                          <span>Mapping ICD to HCC...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Map to HCC</span>
-                          <ArrowRight size={18} />
-                        </>
-                      )}
-                    </button>
-                  )}
-                  {step > 1 && (
-                    <div className="flex items-center space-x-2 text-status-success bg-status-success/10 px-4 py-2 rounded-lg font-semibold text-sm w-full sm:w-auto justify-center">
-                      <CheckCircle2 size={18} />
-                      <span>Mapping Complete</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Mapped Data Preview (Shows in Step 2) */}
-              {step >= 2 && mappedData && (
-                <div className="mt-8 animate-slide-in">
-                  <h3 className="text-xs font-bold text-content-muted uppercase tracking-wider mb-3">Extracted HCC Codes Overview</h3>
-                  <div className="overflow-x-auto border border-surface-border rounded-lg w-full">
-                    <table className="w-full text-sm text-left bg-surface min-w-[600px]">
-                      <thead className="bg-surface-background text-content-muted font-semibold border-b border-surface-border">
-                        <tr>
-                          <th className="px-4 py-3">Patient ID</th>
-                          <th className="px-4 py-3">Age</th>
-                          <th className="px-4 py-3">Sex</th>
-                          <th className="px-4 py-3">ICD Code</th>
-                          <th className="px-4 py-3">Mapped HCC Code</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-surface-border">
-                        {mappedData.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-surface-background/50">
-                            <td className="px-4 py-3 font-semibold text-content-main">{item.patientId}</td>
-                            <td className="px-4 py-3 text-content-muted font-medium">{item.age}</td>
-                            <td className="px-4 py-3 text-content-muted font-medium">{item.sex}</td>
-                            <td className="px-4 py-3"><span className="bg-surface-background text-content-main px-2 py-1 rounded text-xs font-bold border border-surface-border">{item.icd}</span></td>
-                            <td className="px-4 py-3"><span className="bg-brand-blue/10 text-brand-blue px-2 py-1 rounded text-xs font-bold">{item.hcc}</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
               )}
             </div>
+          )}
 
-            {/* Step 2: Stratification (Visible only after Step 1 completes) */}
-            {step >= 2 && (
-              <div className={`bg-surface rounded-xl p-4 sm:p-6 md:p-8 shadow-sm border transition-all card-shadow ${step === 2 ? 'border-status-warning' : 'border-surface-border'}`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 rounded-full bg-status-warning/10 text-status-warning flex items-center justify-center font-bold text-lg">2</div>
-                    <h2 className="text-xl font-bold text-content-main">Risk Stratification</h2>
+          {/* Step 3: Workflow Assignment */}
+          {classificationResults && (
+            <div className="bg-surface rounded-xl p-6 md:p-8 shadow-sm border border-surface-border">
+              <div className="flex items-center space-x-4 mb-6">
+                <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold text-lg">3</div>
+                <h2 className="text-xl font-bold text-content-main">Assign Workflow</h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Agent Verification */}
+                <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Users className="text-red-600" size={24} />
+                    <h3 className="font-bold text-red-800">Flagged Members</h3>
                   </div>
-                  
-                  {step === 2 && (
-                    <button 
-                      onClick={handleCheckMembers}
-                      disabled={isChecking}
-                      className="w-full sm:w-auto bg-status-warning hover:bg-status-warning/90 text-white px-6 py-2.5 rounded-lg font-semibold shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isChecking ? (
-                        <>
-                          <Loader2 className="animate-spin" size={18} />
-                          <span>Analyzing Risk Gaps...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Check for Flagged Members</span>
-                          <ShieldCheck size={18} />
-                        </>
-                      )}
-                    </button>
-                  )}
-                  {step === 3 && (
-                     <div className="flex items-center space-x-2 text-status-success bg-status-success/10 px-4 py-2 rounded-lg font-semibold text-sm w-full sm:w-auto justify-center">
-                      <CheckCircle2 size={18} />
-                      <span>Analysis Complete</span>
-                    </div>
-                  )}
+                  <p className="text-sm text-content-muted mb-4">
+                    Send flagged members for agent verification and analysis.
+                  </p>
+                  <button
+                    onClick={handleAssignForAgent}
+                    disabled={assignmentStatus.agent}
+                    className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {assignmentStatus.agent ? 'Assigned for Agent Verification' : 'Send for Agent Verification'}
+                  </button>
                 </div>
 
-                {/* Final Results (Shows in Step 3) */}
-                {step === 3 && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-in mt-8">
-                    
-                    {/* Flagged Members Table */}
-                    <div className="bg-status-danger/5 border border-status-danger/20 rounded-xl p-5 md:p-6 flex flex-col">
-                      <div className="flex items-center space-x-2 mb-2 text-status-danger">
-                        <AlertTriangle size={24} />
-                        <h3 className="font-bold text-lg">Flagged Members</h3>
-                      </div>
-                      <p className="text-sm text-content-muted mb-6">Members with suspected undocumented HCCs based on clinical history.</p>
-                      
-                      <div className="space-y-3 mb-6 flex-1">
-                        {flaggedMembers.map((member, idx) => (
-                          <div key={idx} className="bg-surface rounded-lg p-4 shadow-sm border border-surface-border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div>
-                              <p className="font-semibold text-content-main">{member.name}</p>
-                              <p className="text-xs text-content-muted font-medium">{member.id} • {member.plan}</p>
-                            </div>
-                            <div className="sm:text-right">
-                              <p className="text-sm font-bold text-status-danger">{member.missingHcc}</p>
-                              <p className="text-xs font-semibold text-content-muted">Est. RAF: <span className="text-content-main">{member.estimatedRaf}</span></p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                {/* ML Prediction */}
+                <div className="p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Brain className="text-blue-600" size={24} />
+                    <h3 className="font-bold text-blue-800">Unflagged Members</h3>
+                  </div>
+                  <p className="text-sm text-content-muted mb-4">
+                    Send unflagged members for ML risk prediction analysis.
+                  </p>
+                  <button
+                    onClick={handleAssignForML}
+                    disabled={assignmentStatus.ml}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {assignmentStatus.ml ? 'Assigned for ML Prediction' : 'Send for ML Prediction'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
-                      <button 
-                        onClick={handleSendToAgent}
-                        className="w-full bg-status-danger hover:bg-status-danger/90 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-colors flex justify-center items-center space-x-2 mt-auto"
+          {/* Results Table - Show only 15 records per page */}
+          <div className="bg-surface rounded-xl p-6 md:p-8 shadow-sm border border-surface-border">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-content-main">HCC Mapping Results</h3>
+              <div className="text-sm text-content-muted">
+                {results && `Showing 15 records per page`}
+              </div>
+            </div>
+
+            {loadingResults ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="animate-spin text-brand-blue" size={32} />
+                <span className="ml-3 text-content-muted">Loading results...</span>
+              </div>
+            ) : results && results.records.length > 0 ? (
+              <>
+                <div className="overflow-x-auto border border-surface-border rounded-lg">
+                  <table className="w-full text-sm text-left bg-surface">
+                    <thead className="bg-surface-background text-content-muted font-semibold border-b border-surface-border">
+                      <tr>
+                        <th className="px-4 py-3">Patient ID</th>
+                        <th className="px-4 py-3">Age</th>
+                        <th className="px-4 py-3">Sex</th>
+                        <th className="px-4 py-3">ICD Code</th>
+                        <th className="px-4 py-3">HCC Code</th>
+                        <th className="px-4 py-3">Mapping Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-surface-border">
+                      {results.records.map((record, idx) => (
+                        <tr key={idx} className="hover:bg-surface-background/50">
+                          <td className="px-4 py-3 font-semibold text-content-main">
+                            {record.patient_id}
+                          </td>
+                          <td className="px-4 py-3 text-content-muted">{record.age}</td>
+                          <td className="px-4 py-3 text-content-muted">{record.sex}</td>
+                          <td className="px-4 py-3">
+                            <span className="bg-surface-background text-content-main px-2 py-1 rounded text-xs font-medium border border-surface-border">
+                              {record.icd10_code || '—'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="bg-brand-blue/10 text-brand-blue px-2 py-1 rounded text-xs font-medium">
+                              {record.hcc_code || '—'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {record.mapping_status === 'MAPPED' ? (
+                              <span className="bg-status-success/10 text-status-success px-2 py-1 rounded text-xs font-medium">
+                                MAPPED
+                              </span>
+                            ) : (
+                              <span className="bg-status-danger/10 text-status-danger px-2 py-1 rounded text-xs font-medium">
+                                UNMAPPED
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                {results.total > 15 && (
+                  <div className="flex justify-between items-center mt-6">
+                    <div className="text-sm text-content-muted">
+                      Page {currentPage} of {Math.ceil(results.total / 15)}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => loadResults(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 text-sm font-medium text-content-muted hover:text-content-main disabled:opacity-50 disabled:cursor-not-allowed border border-surface-border rounded hover:bg-surface-background"
                       >
-                        <span>Send for Agent Verification</span>
-                        <ArrowRight size={18} />
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => loadResults(currentPage + 1)}
+                        disabled={currentPage >= Math.ceil(results.total / 15)}
+                        className="px-3 py-2 text-sm font-medium text-content-muted hover:text-content-main disabled:opacity-50 disabled:cursor-not-allowed border border-surface-border rounded hover:bg-surface-background"
+                      >
+                        Next
                       </button>
                     </div>
-
-                    {/* Unflagged Members Table */}
-                    <div className="bg-brand-purple/5 border border-brand-purple/20 rounded-xl p-5 md:p-6 flex flex-col">
-                      <div className="flex items-center space-x-2 mb-2 text-brand-purple">
-                        <CheckCircle2 size={24} />
-                        <h3 className="font-bold text-lg">Unflagged Members</h3>
-                      </div>
-                      <p className="text-sm text-content-muted mb-6">Members with clean records and fully captured risk factors.</p>
-                      
-                      <div className="space-y-3 mb-6 flex-1">
-                        {unflaggedMembers.map((member, idx) => (
-                          <div key={idx} className="bg-surface rounded-lg p-4 shadow-sm border border-surface-border flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div>
-                              <p className="font-semibold text-content-main">{member.name}</p>
-                              <p className="text-xs text-content-muted font-medium">{member.id} • {member.plan}</p>
-                            </div>
-                            <div className="sm:text-right">
-                              <p className="text-sm font-semibold text-content-main">{member.condition}</p>
-                              <p className="text-xs font-medium text-content-muted">Last Encounter: {member.lastVisit}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <button 
-                        onClick={handleSendToML}
-                        className="w-full bg-brand-purple hover:bg-brand-purple/90 text-white font-semibold py-2.5 rounded-lg shadow-sm transition-colors flex justify-center items-center space-x-2 mt-auto"
-                      >
-                        <span>Send for ML Prediction</span>
-                        <ArrowRight size={18} />
-                      </button>
-                    </div>
-
                   </div>
                 )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-content-muted">No results found. Upload a CSV file to get started.</p>
               </div>
             )}
-            
           </div>
         </div>
       </div>
-
-      {/* Toast Popup Notification */}
-      {popupMessage && (
-        <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-surface border border-surface-border text-content-main px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3 z-50 animate-slide-in">
-          <CheckCircle2 className="text-status-success" size={20} />
-          <span className="font-semibold text-sm">{popupMessage}</span>
-        </div>
-      )}
     </MainLayout>
   );
 };
