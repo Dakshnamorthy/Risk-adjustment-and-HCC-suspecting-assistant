@@ -96,7 +96,7 @@ PostgreSQL
 External pipeline
   ^
   | Classification, agent, and ML requests
-  +-- NGROK_PIPELINE_URL
+  +-- AGENT_HOSTED_PIPELINE_LINK
 ```
 
 The backend creates or verifies its core tables when `backend/main.py` starts. Database connection settings are loaded from `backend/.env`.
@@ -124,7 +124,7 @@ DB_USER=postgres
 DB_PASSWORD=change-me
 
 # Required for classification, agent assignment, and ML assignment
-NGROK_PIPELINE_URL=https://example.invalid/run-pipeline
+AGENT_HOSTED_PIPELINE_LINK=https://example.invalid/run-pipeline
 ```
 
 The backend reads this file relative to the repository, not from the current shell directory. Do not commit credentials or paste them into documentation. The checked-in local environment file contains deployment-specific secrets and should be rotated if it has ever been shared.
@@ -407,7 +407,7 @@ Log in through `/login`, confirm the browser accepts the `cts_session` cookie, a
 
 ### Classification or assignment returns a pipeline error
 
-Confirm that `NGROK_PIPELINE_URL` is set, reachable from the backend machine, and accepts the payload containing `patient_ids`, `records`, and `destination`. The request timeout is 120 seconds.
+Confirm that `AGENT_HOSTED_PIPELINE_LINK` is set, reachable from the backend machine, and accepts the payload containing `patient_ids`, `records`, and `destination`. The request timeout is 120 seconds.
 
 ### CSV upload is rejected
 
